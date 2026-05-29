@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DXC MFA Verification</title>
+
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.1.0/css/all.css">
+    <link href="https://fonts.googleapis.com/css?family=Quicksand" rel="stylesheet">
+</head>
+
+<body>
+    <div class="bg">
+        <div class="login">
+            <div class="profilepic">
+                <img src="images/download.png" alt="Employee profile picture">
+            </div>
+
+            <h1>Multi-Factor Authentication</h1>
+            <p>Enter the verification code from your Authenticator app</p>
+        </div>
+
+        <div class="inputx">
+            <form id="mfaForm">
+                <input type="text" name="mfa_code" placeholder="Verification code" required>
+
+                <button type="submit">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <span class="forgot" id="mfaMessage"></span>
+        </div>
+    </div>
+
+    <div class="accesibility">
+        <div class="wifi">
+            <i class="fas fa-wifi fa-2x"></i>
+        </div>
+
+        <div class="desktop">
+            <i class="fas fa-desktop fa-2x"></i>
+        </div>
+
+        <div class="power">
+            <i class="fas fa-power-off fa-2x"></i>
+        </div>
+    </div>
+
+    <script>
+        const secret = "JBSWY3DPEHPK3PXP";
+
+        async function sendAuthLog(logData) {
+            try {
+                const response = await fetch("http://127.0.0.1:5000/api/logs", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(logData)
+                });
+
+                return await response.json();
+
+            } catch (error) {
+                console.error("Could not send log to backend:", error);
+            }
+        }
+
+        function getOrCreateDeviceId() {
+            let deviceId = localStorage.getItem("deviceId");
+
+            if (!deviceId) {
+                deviceId = "device_" + crypto.randomUUID();
+                localStorage.setItem("deviceId", deviceId);
+        }
+
+        return deviceId;
+}
+        function base32ToBytes(base32) {
+            const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+            let bits = "";
+            let bytes = [];
+
+            base32 = base32.replace(/=+$/, "").toUpperCase();
+
+            for (let char of base32) {
+                const val = alphabet.indexOf(char);
+                if (val === -1) continue;
+                bits += val.toString(2).padStart(5, "0");
+            }
+
+            for (let i = 0; i + 8 <= bits.length; i += 8) {
+                bytes.push(parseInt(bits.substring(i, i + 8), 2));
+            }
+
+            return new Uint8Array(bytes);
+        }
+
+        async function generateTOTP(secret) {
+            const keyBytes = base32ToBytes(secret);
+            const epoch = Math.floor(Date.now() / 1000);
+            const timeStep = Math.floor(epoch / 30);
+
+            const buffer = new ArrayBuffer(8);
+            const view = new DataView(buffer);
+            view.setUint32(4, timeStep);
+
+            const cryptoKey = await crypto.subtle.importKey(
+                "raw",
+                keyBytes,
+                { name: "HMAC", hash: "SHA-1" },
+                false,
+                ["sign"]
+            );
+
+            const hmac = await crypto.subtle.sign("HMAC", cryptoKey, buffer);
+            const hmacBytes = new Uint8Array(hmac);
+
+            const offset = hmacBytes[hmacBytes.length - 1] & 0xf;
+            const code =
+                ((hmacBytes[offset] & 0x7f) << 24) |
+                ((hmacBytes[offset + 1] & 0xff) << 16) |
+                ((hmacBytes[offset + 2] & 0xff) << 8) |
+                (hmacBytes[offset + 3] & 0xff);
+
+            return (code % 1000000).toString().padStart(6, "0");
+        }
+
+        document.getElementById("mfaForm").addEventListener("submit", async function(event) {
+            event.preventDefault();
+
+            const userCode = document.querySelector("input[name='mfa_code']").value.trim();
+            const message = document.getElementById("mfaMessage");
+
+            const currentCode = await generateTOTP(secret);
+            const currentUser = JSON.parse(localStorage.getItem("currentUser"));
+            const loginStartTime = parseInt(localStorage.getItem("loginStartTime")) || Date.now();
+            const mfaStartTime = parseInt(localStorage.getItem("mfaStartTime")) || Date.now();
+            const failedAttempts = parseInt(localStorage.getItem("mfaFailedAttempts")) || 0;
+
+            if (userCode === currentCode) {
+                message.style.color = "lightgreen";
+                message.textContent = "MFA accepted. Redirecting...";
+
+                await sendAuthLog({
+                    user_id: currentUser ? currentUser.email : "unknown_user",
+                    timestamp: new Date().toISOString(),
+                    ip: "frontend_test_ip",
+                    country: "Denmark",
+                    city: "Aarhus",
+                    device: "Browser",
+                    device_id: getOrCreateDeviceId(),
+                    device_type: "Desktop",
+                    browser: "Chrome",
+                    os: "Windows",
+                    user_agent: navigator.userAgent,
+                    event_type: "login_success",
+                    login_status: "success",
+                    login_duration_ms: Date.now() - loginStartTime,
+                    mfa_required: true,
+                    mfa_success: true,
+                    mfa_duration_ms: Date.now() - mfaStartTime,
+                    failed_attempts_before_success: failedAttempts,
+                    session_id: "session_" + Date.now(),
+                    session_duration_minutes: 0
+                });
+
+                setTimeout(function () {
+                    sessionStorage.setItem("authenticated", "true");
+                    window.location.href = "workspace.html";
+                }, 1000);
+
+            } else {
+                localStorage.setItem("mfaFailedAttempts", failedAttempts + 1);
+
+                await sendAuthLog({
+                    user_id: currentUser ? currentUser.email : "unknown_user",
+                    timestamp: new Date().toISOString(),
+                    ip: "frontend_test_ip",
+                    country: "Denmark",
+                    city: "Aarhus",
+                    device: "Browser",
+                    device_id: getOrCreateDeviceId(),
+                    device_type: "Desktop",
+                    browser: "Chrome",
+                    os: "Windows",
+                    user_agent: navigator.userAgent,
+                    event_type: "mfa_failure",
+                    login_status: "failed",
+                    login_duration_ms: Date.now() - loginStartTime,
+                    mfa_required: true,
+                    mfa_success: false,
+                    mfa_duration_ms: Date.now() - mfaStartTime,
+                    failed_attempts_before_success: failedAttempts + 1,
+                    session_id: "no_session",
+                    session_duration_minutes: 0
+                });
+
+                message.style.color = "salmon";
+                message.textContent = "MFA failed. Please try again.";
+            }
+        });
+    </script>
+</body>
+</html>
