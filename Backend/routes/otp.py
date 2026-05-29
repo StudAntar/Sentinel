@@ -11,7 +11,6 @@ def verify_otp():
     user_id = data.get("user_id")
     otp = data.get("otp")
 
-    # 🔹 Demo OTP
     if otp == "123456":
 
         return jsonify({
