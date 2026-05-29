@@ -7,7 +7,7 @@ function AlertModal({ alert, onClose }) {
     if (severity === "medium") return "#f59e0b";
     return "#22c55e";
   }
-
+  
   return (
 
     <div style={overlay} onClick={onClose}>
@@ -17,7 +17,6 @@ function AlertModal({ alert, onClose }) {
         onClick={(e) => e.stopPropagation()}
       >
 
-        {/* 🔥 Header */}
         <div style={header}>
 
           <h2>Alert Details</h2>
@@ -31,7 +30,6 @@ function AlertModal({ alert, onClose }) {
 
         </div>
 
-        {/* 🔥 Severity */}
         <div
           style={{
             ...severityBadge,
@@ -41,7 +39,6 @@ function AlertModal({ alert, onClose }) {
           {(alert.severity || "unknown").toUpperCase()}
         </div>
 
-        {/* 🔥 Details */}
         <div style={details}>
 
           <div style={row}>
@@ -70,7 +67,6 @@ function AlertModal({ alert, onClose }) {
 
         </div>
 
-        {/* 🔥 AI Analysis */}
         <div style={analysisBox}>
 
           <h3 style={{ marginBottom: "10px" }}>
@@ -85,7 +81,6 @@ function AlertModal({ alert, onClose }) {
 
         </div>
 
-        {/* 🔥 Actions */}
         <div style={actions}>
 
           <button style={safeBtn}>
@@ -103,8 +98,6 @@ function AlertModal({ alert, onClose }) {
     </div>
   );
 }
-
-/* 🔥 Styles */
 
 const overlay = {
   position: "fixed",
