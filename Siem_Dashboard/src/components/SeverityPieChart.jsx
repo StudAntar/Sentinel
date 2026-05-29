@@ -7,9 +7,9 @@ import {
 } from "recharts";
 
 const COLORS = [
-  "#ef4444", // high
-  "#f59e0b", // medium
-  "#22c55e", // low
+  "#ef4444",
+  "#f59e0b",
+  "#22c55e",
 ];
 
 function SeverityPieChart({ alerts }) {
@@ -70,8 +70,6 @@ function SeverityPieChart({ alerts }) {
     </div>
   );
 }
-
-/* 🔥 Styles */
 
 const container = {
   background: "linear-gradient(145deg, #111827, #020617)",
