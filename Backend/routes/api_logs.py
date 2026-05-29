@@ -10,7 +10,6 @@ def receive_log():
 
     log_data = request.json
 
-    # Backend-controlled IP address
     client_ip = request.headers.get("X-Forwarded-For", request.remote_addr)
 
     if client_ip and "," in client_ip:
