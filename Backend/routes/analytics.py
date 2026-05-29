@@ -10,43 +10,36 @@ def get_analytics():
     conn = get_connection()
     cursor = conn.cursor()
 
-    # 🔹 Total logs
     cursor.execute("SELECT COUNT(*) FROM logs")
     total_logs = cursor.fetchone()[0]
 
-    # 🔹 Total alerts
     cursor.execute("SELECT COUNT(*) FROM alerts")
     total_alerts = cursor.fetchone()[0]
 
-    # 🔹 High alerts
     cursor.execute("""
         SELECT COUNT(*) FROM alerts
         WHERE threat_level = 'HIGH'
     """)
     high_alerts = cursor.fetchone()[0]
 
-    # 🔹 Average threat score
     cursor.execute("""
         SELECT COALESCE(AVG(threat_score), 0)
         FROM alerts
     """)
     avg_threat_score = round(cursor.fetchone()[0])
 
-    # 🔹 Successful logins
     cursor.execute("""
         SELECT COUNT(*) FROM logs
         WHERE login_status = 'success'
     """)
     successful_logins = cursor.fetchone()[0]
 
-    # 🔹 Failed logins
     cursor.execute("""
         SELECT COUNT(*) FROM logs
         WHERE login_status = 'failed'
     """)
     failed_logins = cursor.fetchone()[0]
 
-    # 🔹 Rule trigger counts
     cursor.execute("""
         SELECT
             rule_name,
@@ -64,7 +57,6 @@ def get_analytics():
         for row in cursor.fetchall()
     ]
 
-    # 🔹 Severity distribution
     cursor.execute("""
         SELECT
             severity,
@@ -81,7 +73,6 @@ def get_analytics():
         for row in cursor.fetchall()
     ]
 
-    # 🔹 Threat level distribution
     cursor.execute("""
         SELECT
             threat_level,
