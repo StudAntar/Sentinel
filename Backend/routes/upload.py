@@ -21,25 +21,19 @@ def upload_logs():
 
     for log in parsed_logs:
 
-        # 🔹 Gem ALLE logs
         insert_log(log)
 
-        # 🔹 Feature engineering
         features = extract_features(log)
 
-        # 🔹 ML prediction
         anomaly_score = predict_anomaly(features)
 
-        # 🔹 Threat score
         threat_score = calculate_threat_score(
             anomaly_score,
             features
         )
 
-        # 🔹 Forklaring
         explanation = generate_explanation(features)
 
-        # 🔹 Kun farlige logs bliver alerts
         if threat_score >= 80:
 
             threat_level = "HIGH"
