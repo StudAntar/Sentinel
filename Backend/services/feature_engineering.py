@@ -16,16 +16,12 @@ def extract_features(log):
     mfa_required = log.get("mfa_required", False)
     mfa_success = log.get("mfa_success", False)
 
-    # Login failure
     features["login_failed"] = event_type == "login_failure"
 
-    # MFA failure
     features["mfa_failed"] = event_type == "mfa_failure"
 
-    # Successful login
     features["successful_login"] = event_type == "login_success"
 
-    # Outside working hours
     try:
         timestamp = datetime.fromisoformat(str(timestamp_value))
         hour = timestamp.hour
@@ -33,19 +29,14 @@ def extract_features(log):
     except Exception:
         features["outside_working_hours"] = False
 
-    # Foreign country
     features["foreign_country"] = country != "Denmark"
 
-    # Unknown device
     features["unknown_device"] = device_id == "unknown_device"
 
-    # MFA required
     features["mfa_required"] = safe_bool(mfa_required)
 
-    # MFA success
     features["mfa_success"] = safe_bool(mfa_success)
 
-    # MFA failed by boolean logic
     features["mfa_failed"] = (
         features["mfa_failed"]
         or (
